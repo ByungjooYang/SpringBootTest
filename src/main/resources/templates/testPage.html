@@ -6,23 +6,86 @@
 </head>
 <body>
 <!--<img id="img" src="/img/img.jpeg" alt="오류가 발생하였습니다."/>-->
-<canvas id="canvas" width="400" height="500">
+<canvas id="canvas" width="700" height="800">
     This browser doesn't support canvas
 </canvas>
 </body>
 <script>
     let canvas = document.getElementById("canvas");
     let context = canvas.getContext("2d");
+    let painting = false;
+
     context.drawImage(canvas, 10, 10);
     context.beginPath();
-    context.rect(0, 0, 400, 400);
+    context.rect(200, 200, 400, 400);
     context.stroke();
+    context.globalCompositeOperation = 'destination-over'
 
     let img = new Image();
     img.onload = function(){
-        context.drawImage(img, 10, 10);
+        context.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
 
     img.src = '/img/img.jpeg';
+
+    function drawing(){
+        var blockSize = 10; // 모자이크 블록 크기
+        let x = event.clientX - context.canvas.offsetLeft - 15;
+        let y = event.clientY - context.canvas.offsetTop - 15;
+        var imageData = context.getImageData(x, y, blockSize, blockSize);
+        var data = imageData.data;
+        var average = getAverageColor(data);
+        for (var i = 0; i < data.length; i += 4) {
+            data[i] = average.red;
+            data[i + 1] = average.green;
+            data[i + 2] = average.blue;
+        }
+
+        if(!painting) {
+            context.beginPath();
+            context.moveTo(x, y);
+        }
+        else {
+            context.lineTo(x, y);
+            context.stroke();
+        }
+
+        context.putImageData(imageData, x, y);
+
+    }
+
+    // 평균 색상 계산 함수
+    function getAverageColor(data) {
+        var red = 0,
+            green = 0,
+            blue = 0;
+
+        for (var i = 0; i < data.length; i += 4) {
+            red += data[i];
+            green += data[i + 1];
+            blue += data[i + 2];
+        }
+
+        var total = data.length / 4;
+        return {
+            red: Math.round(red / total),
+            green: Math.round(green / total),
+            blue: Math.round(blue / total)
+        };
+    }
+
+    function startPainting() {
+        painting=true;
+    }
+    function stopPainting(event) {
+        painting=false;
+    }
+
+    canvas.addEventListener("mousedown", startPainting);
+    canvas.addEventListener("mouseup", stopPainting);
+    canvas.addEventListener("mouseleave", stopPainting);
+    canvas.addEventListener('mousemove', drawing);
+
+
 </script>
 </html>
